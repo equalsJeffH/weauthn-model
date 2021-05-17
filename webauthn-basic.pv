@@ -1,6 +1,6 @@
 (* ProVerif Web Authentication Formal Model
    originally by Iness Ben Guirat and Harry Halpin
-   https://dl.acm.org/doi/10.1145/3190619.3190640
+   Paper: https://dl.acm.org/doi/10.1145/3190619.3190640
    github: https://github.com/hhalpin/weauthn-model
 *)
 
@@ -16,45 +16,49 @@ type RP_id.
 type key.
 
 
-(*For Digital Signatures *)
+(* For Digital Signatures *)
 
 fun spk(skey):pkey.
 fun sign(bitstring, skey):bitstring.
 reduc forall x:bitstring, y:skey; getmess(sign(x, y)) = x.
 reduc forall x:bitstring, y:skey; checksign(sign(x, y), spk(y)) = x.
 
-(*For nonces*)
+
+(* For nonces *)
 
 fun nonce_to_bitstring ( nonce ) : bitstring [ data , typeConverter ] .
 table nonceTable(nonce) .
 
-(*For Digital signature over Attestation Credentials*)
+
+(* For Digital signature over Attestation Credentials *)
 
 fun spkAtt(AttestationPrivatekey):AttestationPublicKey.
 fun signAtt(bitstring, AttestationPrivatekey):bitstring.
 reduc forall x:bitstring, y:AttestationPrivatekey; getmessAtt(signAtt(x, y)) = x.
 reduc forall x:bitstring, y:AttestationPrivatekey; checksignAtt(signAtt(x, y), spkAtt(y)) = x.
 
-free attskU: AttestationPrivatekey[private].
-free attpkU: AttestationPrivatekey[private].
+free attskU: AttestationPrivatekey [private].
+free attpkU: AttestationPrivatekey [private].
 
 
 
 free k: key[private].
-(*Symetric encryption*)
+
+(* Symetric encryption *)
 
 fun senc(bitstring, key): bitstring.
 reduc forall x: bitstring, k: key; sdec(senc(x,k),k) = x.
 
 
-(*User's ID  and Server's ID*)
+(* User's ID  and Server's ID *)
+
 const cookie:bitstring [private].
 const attestation_cert:bitstring [private].
-const a: RP_id[private].
+const a: RP_id [private].
 
 
 
-(*Events and Queries*)
+(* Events and Queries *)
 
 event sentChallengeResponse(bitstring, bitstring).
 event validChallengeResponse(bitstring, bitstring).
@@ -66,6 +70,9 @@ event reachAuthentication(bitstring). *)
 query attacker(attskU).
 query attacker(attpkU).
 query attacker(k).
+
+
+(* Processes *)
 
 let processUser ( k: key, attskU: AttestationPrivatekey, attpkU:AttestationPublicKey,attestation_cert:bitstring) =
     (*Registration*)
