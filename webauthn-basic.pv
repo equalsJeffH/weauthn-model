@@ -4,7 +4,7 @@
    github: https://github.com/hhalpin/weauthn-model
 *)
 
-free c:channel.
+free c:channel.  (* TLS channel *)
 
 type AttestationPublicKey.
 type AttestationPrivatekey.
@@ -13,10 +13,10 @@ type pkey.
 type skey.
 type host.
 type RP_id.
-type key.
+type key.     (* symmetric key *)
 
 
-(* For Digital Signatures *)
+(***** For Digital Signatures *****)
 
 fun spk(skey):pkey.
 fun sign(bitstring, skey):bitstring.
@@ -24,33 +24,48 @@ reduc forall x:bitstring, y:skey; getmess(sign(x, y)) = x.
 reduc forall x:bitstring, y:skey; checksign(sign(x, y), spk(y)) = x.
 
 
-(* For nonces *)
+(***** For nonces *****)
 
 fun nonce_to_bitstring ( nonce ) : bitstring [ data , typeConverter ] .
 table nonceTable(nonce) .
 
 
-(* For Digital signature over Attestation Credentials *)
+(***** For Digital signature over Attestation Credentials *****)
+(*                                                            *)
+(*  This model of signatures assumes that the signature is    *)
+(*  always accompanied with the message x.                    *)
 
-fun spkAtt(AttestationPrivatekey):AttestationPublicKey.
-fun signAtt(bitstring, AttestationPrivatekey):bitstring.
-reduc forall x:bitstring, y:AttestationPrivatekey; getmessAtt(signAtt(x, y)) = x.
-reduc forall x:bitstring, y:AttestationPrivatekey; checksignAtt(signAtt(x, y), spkAtt(y)) = x.
+fun spkAtt(AttestationPrivatekey): AttestationPublicKey.
+fun signAtt(bitstring, AttestationPrivatekey): bitstring.
+
+reduc forall x:bitstring, y:AttestationPrivatekey; getmessAtt(signAtt(x, y)) = x. (* The destructor getmess allows 
+                                                                                     the attacker to get the message 
+                                                                                     x from the signature, even 
+                                                                                     without having the key. *)
+                                                                                     
+reduc forall x:bitstring, y:AttestationPrivatekey; checksignAtt(signAtt(x, y), spkAtt(y)) = x. (* The destructor 
+                                                                                    checksign checks the signature, 
+                                                                                    and returns x only when the 
+                                                                                    signature is correct. Honest 
+                                                                                    processes typically use only 
+                                                                                    checksign. *)
 
 free attskU: AttestationPrivatekey [private].
-free attpkU: AttestationPrivatekey [private].
+free attpkU: AttestationPrivatekey [private].  (* BUG?: should be type AttestationPublicKey ? *)
 
 
 
-free k: key[private].
+free k: key [private].  (* TLS symmetric encryption key *)
 
-(* Symetric encryption *)
+
+
+(***** Symetric encryption *****)
 
 fun senc(bitstring, key): bitstring.
 reduc forall x: bitstring, k: key; sdec(senc(x,k),k) = x.
 
 
-(* User's ID  and Server's ID *)
+(***** User's ID  and Server's ID *****)
 
 const cookie:bitstring [private].
 const attestation_cert:bitstring [private].
@@ -58,7 +73,7 @@ const a: RP_id [private].
 
 
 
-(* Events and Queries *)
+(***** Events and Queries *****)
 
 event sentChallengeResponse(bitstring, bitstring).
 event validChallengeResponse(bitstring, bitstring).
@@ -72,21 +87,24 @@ query attacker(attpkU).
 query attacker(k).
 
 
-(* Processes *)
 
-let processUser ( k: key, attskU: AttestationPrivatekey, attpkU:AttestationPublicKey,attestation_cert:bitstring) =
-    (*Registration*)
-    in(c,s:bitstring);
-    let(challengeU:nonce, a:RP_id)= sdec(s,k) in
+(***** Processes *****)
+
+let processUser ( k: key, attskU: AttestationPrivatekey, attpkU:AttestationPublicKey, attestation_cert:bitstring) =
+    (* Registration *)
+    in(c, s:bitstring);
+    let(challengeU:nonce, a:RP_id) = sdec(s,k) in
     new skU:skey;
     let pkU = spk(skU) in
-    out(c, senc((attestation_cert,signAtt((pkU, attpkU,challengeU), attskU)),k));
+    out(c, 
+        senc( ( attestation_cert, signAtt( (pkU, attpkU, challengeU), attskU ) ), k)
+       );
     
     
-    (*Authentication*)
+    (* Authentication *)
     in(c, s1:bitstring);    
     let mess1= sdec(s1,k) in
-    event sentChallengeResponse(mess1, sign(senc(mess1,k), skU));
+    event sentChallengeResponse( mess1, sign( senc(mess1,k), skU ) );
     out(c, sign(senc(mess1,k), skU)).
 
 let processServer (k: key, a:RP_id) =    
@@ -123,3 +141,5 @@ process
     !processUser( k, attskU,attpkU,attestation_cert) | !processServer(k, a)
   )
    
+
+(***** END *****)
