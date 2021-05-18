@@ -104,12 +104,22 @@ let processUser ( k: key, attskU: AttestationPrivatekey, attpkU:AttestationPubli
     (* Authentication *)
     in(c, s1:bitstring);    
     let mess1 = sdec(s1, k) in
-    event sentChallengeResponse( mess1, sign( senc(mess1,k), skU ) );
-    out(c, sign(senc(mess1,k), skU)).
 
+    (* originally:
+        event sentChallengeResponse( mess1, sign( senc(mess1,k), skU ) );
+        out(c, sign(senc(mess1,k), skU)).
+    *)
+
+    event sentChallengeResponse( mess1, senc( sign(mess1, skU), k) );
+    out(c,
+        senc( sign(mess1, skU), k)
+       ).
+
+    
+    
 let processServer (k: key, a:RP_id) =    
     
-    (*Registration*)
+    (* Registration *)
     new challenge1:nonce;
     out(c, senc((challenge1,a),k));
     in(c, s:bitstring);
@@ -117,12 +127,26 @@ let processServer (k: key, a:RP_id) =
     let (cert:bitstring, pkY1: pkey, attpkU1:AttestationPublicKey, credUser: bitstring, Nt:nonce) = getmessAtt(m) in
     let ver = checksignAtt(m, attpkU1) in
 
-    if (Nt=challenge1) then (
+    if (Nt=challenge1) then (  (* if we got here, then the signature on the registration response msg verified,
+                                  and if the challenge returned is the one for this user, then we will proceed
+                                  to challenge the user to authenticate (not a typical server behavior, this
+                                  just simplifies the model. *)
+
+        (* Authentication *)
+
         new challenge2:nonce;
         let mess = nonce_to_bitstring( challenge2 ) in
-        out(c, senc( (mess, a), k) );
+        out(c, senc( (mess, a), k) );                    (* authentication request with challenge "mess" *)
 
-        (*Authentication*)
+        in(c, s2:bitstring);             (* s2 = senc( sign(mess1, skU), k)                      *)
+        let m1 = sdec(s2, k) in          (* m1 = sign(mess1, skU)                                *)
+        let m2 = checksign(m1, pkY1) in  (* m2 = mess1 (i.e., challenge2 if signature is valid)  *)
+        let m3 = getmess(m1) in          (* m3 = mess1                                           *)
+        if ( m3 = m2 ) then (
+            event validChallengeResponse(m3, m2)
+        )
+
+        (* originally:
         in(c, s2:bitstring);
         let m1 = sdec(s2, k) in
         let m2 = checksign(m1, pkY1) in
@@ -130,6 +154,7 @@ let processServer (k: key, a:RP_id) =
         if ( m3 = getmess(s2)) then (
             event validChallengeResponse(m3, s2)
         )
+        *)
     )
     . 
     
