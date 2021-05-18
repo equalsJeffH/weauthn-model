@@ -103,7 +103,7 @@ let processUser ( k: key, attskU: AttestationPrivatekey, attpkU:AttestationPubli
     
     (* Authentication *)
     in(c, s1:bitstring);    
-    let mess1= sdec(s1,k) in
+    let mess1 = sdec(s1, k) in
     event sentChallengeResponse( mess1, sign( senc(mess1,k), skU ) );
     out(c, sign(senc(mess1,k), skU)).
 
@@ -113,32 +113,34 @@ let processServer (k: key, a:RP_id) =
     new challenge1:nonce;
     out(c, senc((challenge1,a),k));
     in(c, s:bitstring);
-    let m= sdec(s,k) in
+    let m = sdec(s,k) in
     let (cert:bitstring, pkY1: pkey, attpkU1:AttestationPublicKey, credUser: bitstring, Nt:nonce) = getmessAtt(m) in
     let ver = checksignAtt(m, attpkU1) in
 
     if (Nt=challenge1) then (
-    new challenge2:nonce;
-    let mess= nonce_to_bitstring ( challenge2 ) in
-    out(c,senc ((mess,a),k));
+        new challenge2:nonce;
+        let mess = nonce_to_bitstring( challenge2 ) in
+        out(c, senc( (mess, a), k) );
 
-    (*Authentication*)
-    in(c, s2:bitstring); 
-    let m1= sdec(s2,k) in
-    let m2 = checksign(m1, pkY1) in
-    let m3 = getmess(s2) in
-    if ( m3= getmess(s2)) then (
-    event validChallengeResponse(m3, s2)     
-    ))
+        (*Authentication*)
+        in(c, s2:bitstring);
+        let m1 = sdec(s2, k) in
+        let m2 = checksign(m1, pkY1) in
+        let m3 = getmess(s2) in
+        if ( m3 = getmess(s2)) then (
+            event validChallengeResponse(m3, s2)
+        )
+    )
     . 
     
 
 process
   new k:key;
   new attskU:AttestationPrivatekey;
+
   let attpkU = spkAtt(attskU) in
   (      
-    !processUser( k, attskU,attpkU,attestation_cert) | !processServer(k, a)
+    !processUser( k, attskU, attpkU, attestation_cert) | !processServer(k, a)
   )
    
 
