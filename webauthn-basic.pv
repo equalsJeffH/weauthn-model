@@ -163,12 +163,12 @@ let processServer (k: key, a:RP_id) =
         out(c, senc( (mess, a), k) );    (* authentication request with `challenge2` as `mess`   *)
 
         (****     for each of next 4 lines: local var | what client sent and thus local var is set to      *)
-        (*                                  ----------|----------------------------------------------      *)
+        (*                                ------------|----------------------------------------------      *)
         in(c, s2:bitstring);             (*     s2    |   senc( sign(mess1, skU), k )                      *)
         let m1 = sdec(s2, k) in          (*     m1    |   sign( mess1, skU )                               *)
         let m2 = checksign(m1, pkY1) in  (*     m2    |   mess1 (_should_ be `(mess,a)` if sig is valid)   *)
                                          (*           |                                                    *)
-        let m3 = getmess(m1) in          (*     m3    |   mess1 (tho server sent `(mess,a)`)               *)
+        let m3 = getmess(m1) in          (*     m3    |   mess1 (tho server sent `(mess,a)`) in out() above*)
         
         if ( m3 = m2 ) then (            (* This check is necessary (?) in order to determine if the       *)
                                          (* signed msg is actually the expected one.                       *)
