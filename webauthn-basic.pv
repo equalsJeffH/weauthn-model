@@ -4,6 +4,9 @@
    Slides: https://cps-vo.org/node/48511
    github: https://github.com/hhalpin/weauthn-model
 *)
+(* Updated by Jeff Hodges with corrections and comments, May 2021 *)
+(* http://kingsmountain.com/people/jeff.hodges/                   *)
+
 
 free c:channel.  (* TLS channel *)
 
@@ -150,7 +153,7 @@ let processServer (k: key, a:RP_id) =
 
     if (Nt=challenge1) then (  (* if we got here, then the signature on the registration response msg verified,
                                   and if the challenge returned is the one for this user, then we will proceed
-                                  to challenge the user to authenticate (not a actually typical server behavior, 
+                                  to challenge the user to authenticate (not an actually typical server behavior,
                                   this just simplifies the model). *)
 
         (* Authentication *)
@@ -171,7 +174,7 @@ let processServer (k: key, a:RP_id) =
                                          (* signed msg is actually the expected one.                       *)
                                          (* Perhaps should use for the preceding "let" and this "if":      *)
                                          (*           let (Nbitstr:bitstring, a1:RP_id) = getmess(m1) in   *)
-                                         (*           if ((Nbitstr = mess) && (a1 = a)) then ( ...    (?)  *)
+                                         (*           if ((Nbitstr = mess) && (a1 = a)) then ( ... )   (?) *)
             event validChallengeResponse(m3, m2)
         )
 
