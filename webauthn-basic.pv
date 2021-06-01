@@ -62,7 +62,10 @@ reduc forall x:bitstring, y:AttestationPrivatekey; checksignAtt(signAtt(x, y), s
                                                                                     checksign. *)
 
 free attskU: AttestationPrivatekey [private].
+(* originally:
 free attpkU: AttestationPrivatekey [private].  (* BUG?: should be type AttestationPublicKey ? *)
+
+free attpkU: AttestationPublicKey [private].
 
 
 
