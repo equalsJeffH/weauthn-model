@@ -9,15 +9,21 @@ free c:channel.  (* TLS channel *)
 
 type AttestationPublicKey.
 type AttestationPrivatekey.
+
 type nonce.
-type pkey.
-type skey.
+
+type pkey.    (* asymmetric public key *)
+type skey.    (* asymmetric secret key *)
 
 type RP_id.
 type key.     (* symmetric key *)
 
 
+
 (***** For Digital Signatures *****)
+(*                                                            *)
+(*  This model of signatures assumes that the signature is    *)
+(*  always accompanied with the message x.                    *)
 
 fun spk(skey):pkey.
 fun sign(bitstring, skey):bitstring.
