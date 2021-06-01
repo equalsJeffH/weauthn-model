@@ -1,6 +1,7 @@
 (* ProVerif Web Authentication Formal Model
    originally by Iness Ben Guirat and Harry Halpin
    Paper: https://dl.acm.org/doi/10.1145/3190619.3190640
+   Slides: https://cps-vo.org/node/48511
    github: https://github.com/hhalpin/weauthn-model
 *)
 
@@ -11,7 +12,7 @@ type AttestationPrivatekey.
 type nonce.
 type pkey.
 type skey.
-type host.
+
 type RP_id.
 type key.     (* symmetric key *)
 
@@ -25,6 +26,7 @@ reduc forall x:bitstring, y:skey; getmess(sign(x, y)) = x. (* The destructor get
                                                               the attacker to get the message 
                                                               x from the signature, even 
                                                               without having the key. *)
+
 reduc forall x:bitstring, y:skey; checksign(sign(x, y), spk(y)) = x. (* The destructor 
                                                                         checksign checks the signature, 
                                                                         and returns x only when the 
@@ -148,7 +150,7 @@ let processServer (k: key, a:RP_id) =
         let mess = nonce_to_bitstring( challenge2 ) in
         out(c, senc( (mess, a), k) );    (* authentication request with `challenge2` as `mess`   *)
 
-        (**** for each of next 4 lines:     local var | what client sent and thus local var is set to      *)
+        (****     for each of next 4 lines: local var | what client sent and thus local var is set to      *)
         (*                                  ----------|----------------------------------------------      *)
         in(c, s2:bitstring);             (*     s2    |   senc( sign(mess1, skU), k )                      *)
         let m1 = sdec(s2, k) in          (*     m1    |   sign( mess1, skU )                               *)
