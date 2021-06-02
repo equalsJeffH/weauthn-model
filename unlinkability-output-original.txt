@@ -1,0 +1,257 @@
+File "unlinkability.pv", line 82, characters 52-55:
+Warning: identifier cert rebound.
+File "unlinkability.pv", line 89, characters 7-12:
+Warning: identifier attskU rebound.
+File "unlinkability.pv", line 90, characters 7-12:
+Warning: identifier attpkU rebound.
+Process 0 (that is, the initial process):
+{1}new attskU_1: AttestationPrivatekey;
+{2}let attpkU_1: AttestationPublicKey = spkAtt(attskU_1) in
+(
+    {3}!
+    {4}let k_1: key = k in
+    {5}let cert_1: bitstring = cert in
+    {6}let attskA: AttestationPrivatekey = attskU_1 in
+    {7}in(c, s: bitstring);
+    {8}let (challengeU: nonce,aU: RP_id) = sdec(s,k_1) in
+    {9}new skU: skey;
+    {10}let pkU: pkey = spk(skU) in
+    {11}out(c, senc(signAtt((pkU,attpkU,cert_1,challengeU),attskU),k_1))
+) | (
+    {12}!
+    {13}let k_2: key = k in
+    {14}let a_1: RP_id = a in
+    {15}new challenge: nonce;
+    {16}new attpkU3: AttestationPublicKey;
+    {17}let ver1: bitstring = (challenge,a_1) in
+    {18}out(c, senc((challenge,a_1),k_2));
+    {19}in(c, s_1: bitstring);
+    {20}let m: bitstring = sdec(s_1,k_2) in
+    {21}let (pkY1: pkey,attpkU1: AttestationPublicKey,cert_2: bitstring,Nt: nonce) = getmessAtt(m) in
+    {22}let ver: bitstring = checksignAtt(m,attpkU1) in
+    {25}get tableAtt(=attpkU1) in
+        {23}event reachSameKey(attpkU1)
+    else
+        {24}insert tableAtt(attpkU1)
+)
+
+--  Process 1 (that is, process 0, with let moved downwards):
+{1}new attskU_1: AttestationPrivatekey;
+(
+    {3}!
+    {7}in(c, s: bitstring);
+    {4}let k_1: key = k in
+    {8}let (challengeU: nonce,aU: RP_id) = sdec(s,k_1) in
+    {9}new skU: skey;
+    {10}let pkU: pkey = spk(skU) in
+    {5}let cert_1: bitstring = cert in
+    {11}out(c, senc(signAtt((pkU,attpkU,cert_1,challengeU),attskU),k_1))
+) | (
+    {12}!
+    {15}new challenge: nonce;
+    {16}new attpkU3: AttestationPublicKey;
+    {14}let a_1: RP_id = a in
+    {13}let k_2: key = k in
+    {18}out(c, senc((challenge,a_1),k_2));
+    {19}in(c, s_1: bitstring);
+    {20}let m: bitstring = sdec(s_1,k_2) in
+    {21}let (pkY1: pkey,attpkU1: AttestationPublicKey,cert_2: bitstring,Nt: nonce) = getmessAtt(m) in
+    {22}let ver: bitstring = checksignAtt(m,attpkU1) in
+    {25}get tableAtt(=attpkU1) in
+        {23}event reachSameKey(attpkU1)
+    else
+        {24}insert tableAtt(attpkU1)
+)
+
+-- Query not event(reachSameKey(N1)) in process 1.
+Translating the process into Horn clauses...
+Completing...
+Starting query not event(reachSameKey(N1))
+goal reachable: attacker(y) -> end(reachSameKey(spkAtt(y)))
+
+Derivation:
+
+1. Using the function k the attacker may obtain k.
+attacker(k).
+
+2. We assume as hypothesis that
+attacker(y).
+
+3. The attacker has some term Nt_1.
+attacker(Nt_1).
+
+4. The attacker has some term cert_3.
+attacker(cert_3).
+
+5. By 2, the attacker may know y.
+Using the function spkAtt the attacker may obtain spkAtt(y).
+attacker(spkAtt(y)).
+
+6. The attacker has some term pkY1_1.
+attacker(pkY1_1).
+
+7. By 6, the attacker may know pkY1_1.
+By 5, the attacker may know spkAtt(y).
+By 4, the attacker may know cert_3.
+By 3, the attacker may know Nt_1.
+Using the function 4-tuple the attacker may obtain (pkY1_1,spkAtt(y),cert_3,Nt_1).
+attacker((pkY1_1,spkAtt(y),cert_3,Nt_1)).
+
+8. By 7, the attacker may know (pkY1_1,spkAtt(y),cert_3,Nt_1).
+By 2, the attacker may know y.
+Using the function signAtt the attacker may obtain signAtt((pkY1_1,spkAtt(y),cert_3,Nt_1),y).
+attacker(signAtt((pkY1_1,spkAtt(y),cert_3,Nt_1),y)).
+
+9. By 8, the attacker may know signAtt((pkY1_1,spkAtt(y),cert_3,Nt_1),y).
+By 1, the attacker may know k.
+Using the function senc the attacker may obtain senc(signAtt((pkY1_1,spkAtt(y),cert_3,Nt_1),y),k).
+attacker(senc(signAtt((pkY1_1,spkAtt(y),cert_3,Nt_1),y),k)).
+
+10. The attacker has some term Nt_2.
+attacker(Nt_2).
+
+11. The attacker has some term cert_4.
+attacker(cert_4).
+
+12. The attacker has some term pkY1_2.
+attacker(pkY1_2).
+
+13. By 12, the attacker may know pkY1_2.
+By 5, the attacker may know spkAtt(y).
+By 11, the attacker may know cert_4.
+By 10, the attacker may know Nt_2.
+Using the function 4-tuple the attacker may obtain (pkY1_2,spkAtt(y),cert_4,Nt_2).
+attacker((pkY1_2,spkAtt(y),cert_4,Nt_2)).
+
+14. By 13, the attacker may know (pkY1_2,spkAtt(y),cert_4,Nt_2).
+By 2, the attacker may know y.
+Using the function signAtt the attacker may obtain signAtt((pkY1_2,spkAtt(y),cert_4,Nt_2),y).
+attacker(signAtt((pkY1_2,spkAtt(y),cert_4,Nt_2),y)).
+
+15. By 14, the attacker may know signAtt((pkY1_2,spkAtt(y),cert_4,Nt_2),y).
+By 1, the attacker may know k.
+Using the function senc the attacker may obtain senc(signAtt((pkY1_2,spkAtt(y),cert_4,Nt_2),y),k).
+attacker(senc(signAtt((pkY1_2,spkAtt(y),cert_4,Nt_2),y),k)).
+
+16. The message senc(signAtt((pkY1_2,spkAtt(y),cert_4,Nt_2),y),k) that the attacker may have by 15 may be received at input {19}.
+So the entry tableAtt(spkAtt(y)) may be inserted in a table at insert {24}.
+table(tableAtt(spkAtt(y))).
+
+17. The message senc(signAtt((pkY1_1,spkAtt(y),cert_3,Nt_1),y),k) that the attacker may have by 9 may be received at input {19}.
+The entry tableAtt(spkAtt(y)) that may be in a table by 16 may be read at get {25}.
+So event reachSameKey(spkAtt(y)) may be executed at {23}.
+end(reachSameKey(spkAtt(y))).
+
+18. By 17, end(reachSameKey(spkAtt(y))).
+The goal is reached, represented in the following fact:
+end(reachSameKey(spkAtt(y))).
+
+
+A more detailed output of the traces is available with
+  set traceDisplay = long.
+
+new attskU_1: AttestationPrivatekey creating attskU_2 at {1}
+
+new challenge: nonce creating challenge_1 at {15} in copy a_2
+
+new attpkU3: AttestationPublicKey creating attpkU3_1 at {16} in copy a_2
+
+out(c, ~M) with ~M = senc((challenge_1,a),k) at {18} in copy a_2
+
+new challenge: nonce creating challenge_2 at {15} in copy a_3
+
+new attpkU3: AttestationPublicKey creating attpkU3_2 at {16} in copy a_3
+
+out(c, ~M_1) with ~M_1 = senc((challenge_2,a),k) at {18} in copy a_3
+
+in(c, senc(signAtt((a_4,spkAtt(a_5),a_6,a_7),a_5),k)) at {19} in copy a_3
+
+get tableAtt(=spkAtt(a_5)): else branch taken at {25} in copy a_3
+
+insert tableAtt(spkAtt(a_5)) at {24} in copy a_3
+
+in(c, senc(signAtt((a_8,spkAtt(a_5),a_9,a_10),a_5),k)) at {19} in copy a_2
+
+get tableAtt(spkAtt(a_5)) at {25} in copy a_2
+
+event reachSameKey(spkAtt(a_5)) at {23} in copy a_2 (goal)
+
+The event reachSameKey(spkAtt(a_5)) is executed at {23} in copy a_2.
+A trace has been found.
+RESULT not event(reachSameKey(N1)) is false.
+-- Query not attacker(attskU[]) in process 1.
+Translating the process into Horn clauses...
+Completing...
+Starting query not attacker(attskU[])
+RESULT not attacker(attskU[]) is true.
+-- Query not attacker(attpkU[]) in process 1.
+Translating the process into Horn clauses...
+Completing...
+Starting query not attacker(attpkU[])
+goal reachable: attacker(attpkU[])
+
+Derivation:
+Abbreviations:
+challenge_1 = challenge[!1 = @sid]
+skU_1 = skU[s = senc((challenge_1,a),k),!1 = @sid_1]
+
+1. Using the function k the attacker may obtain k.
+attacker(k).
+
+2. The message senc((challenge_1,a),k) may be sent to the attacker at output {18}.
+attacker(senc((challenge_1,a),k)).
+
+3. The message senc((challenge_1,a),k) that the attacker may have by 2 may be received at input {7}.
+So the message senc(signAtt((spk(skU_1),attpkU[],cert,challenge_1),attskU[]),k) may be sent to the attacker at output {11}.
+attacker(senc(signAtt((spk(skU_1),attpkU[],cert,challenge_1),attskU[]),k)).
+
+4. By 3, the attacker may know senc(signAtt((spk(skU_1),attpkU[],cert,challenge_1),attskU[]),k).
+By 1, the attacker may know k.
+Using the function sdec the attacker may obtain signAtt((spk(skU_1),attpkU[],cert,challenge_1),attskU[]).
+attacker(signAtt((spk(skU_1),attpkU[],cert,challenge_1),attskU[])).
+
+5. By 4, the attacker may know signAtt((spk(skU_1),attpkU[],cert,challenge_1),attskU[]).
+Using the function getmessAtt the attacker may obtain (spk(skU_1),attpkU[],cert,challenge_1).
+attacker((spk(skU_1),attpkU[],cert,challenge_1)).
+
+6. By 5, the attacker may know (spk(skU_1),attpkU[],cert,challenge_1).
+Using the function 2-proj-4-tuple the attacker may obtain attpkU[].
+attacker(attpkU[]).
+
+7. By 6, attacker(attpkU[]).
+The goal is reached, represented in the following fact:
+attacker(attpkU[]).
+
+
+A more detailed output of the traces is available with
+  set traceDisplay = long.
+
+new attskU_1: AttestationPrivatekey creating attskU_2 at {1}
+
+new challenge: nonce creating challenge_1 at {15} in copy a_2
+
+new attpkU3: AttestationPublicKey creating attpkU3_1 at {16} in copy a_2
+
+out(c, ~M) with ~M = senc((challenge_1,a),k) at {18} in copy a_2
+
+in(c, ~M) with ~M = senc((challenge_1,a),k) at {7} in copy a_3
+
+new skU: skey creating skU_1 at {9} in copy a_3
+
+out(c, ~M_1) with ~M_1 = senc(signAtt((spk(skU_1),attpkU,cert,challenge_1),attskU),k) at {11} in copy a_3
+
+The attacker has the message 2-proj-4-tuple(getmessAtt(sdec(~M_1,k))) = attpkU.
+A trace has been found.
+RESULT not attacker(attpkU[]) is false.
+
+--------------------------------------------------------------
+Verification summary:
+
+Query not event(reachSameKey(N1)) is false.
+
+Query not attacker(attskU[]) is true.
+
+Query not attacker(attpkU[]) is false.
+
+--------------------------------------------------------------
+

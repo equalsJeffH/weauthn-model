@@ -1,0 +1,128 @@
+File "webauthn-basic.pv", line 65, character 28:
+Warning: identifier k rebound.
+File "webauthn-basic.pv", line 96, character 27:
+Warning: identifier a rebound.
+File "webauthn-basic.pv", line 138, character 7:
+Warning: identifier k rebound.
+File "webauthn-basic.pv", line 139, characters 7-12:
+Warning: identifier attskU rebound.
+File "webauthn-basic.pv", line 141, characters 7-12:
+Warning: identifier attpkU rebound.
+Process 0 (that is, the initial process):
+{1}new k_1: key;
+{2}new attskU_1: AttestationPrivatekey;
+{3}let attpkU_1: AttestationPublicKey = spkAtt(attskU_1) in
+(
+    {4}!
+    {5}let k_2: key = k_1 in
+    {6}let attskU_2: AttestationPrivatekey = attskU_1 in
+    {7}let attestation_cert_1: bitstring = attestation_cert in
+    {8}in(c, s: bitstring);
+    {9}let (challengeU: nonce,a_1: RP_id) = sdec(s,k_2) in
+    {10}new skU: skey;
+    {11}let pkU: pkey = spk(skU) in
+    {12}out(c, senc((attestation_cert_1,signAtt((pkU,attpkU_1,challengeU),attskU_2)),k_2));
+    {13}in(c, s1: bitstring);
+    {14}let mess1: bitstring = sdec(s1,k_2) in
+    {15}event sentChallengeResponse(mess1,sign(senc(mess1,k_2),skU));
+    {16}out(c, sign(senc(mess1,k_2),skU))
+) | (
+    {17}!
+    {18}let k_3: key = k_1 in
+    {19}let a_2: RP_id = a in
+    {20}new challenge1: nonce;
+    {21}out(c, senc((challenge1,a_2),k_3));
+    {22}in(c, s_1: bitstring);
+    {23}let m: bitstring = sdec(s_1,k_3) in
+    {24}let (cert: bitstring,pkY1: pkey,attpkU1: AttestationPublicKey,credUser: bitstring,Nt: nonce) = getmessAtt(m) in
+    {25}let ver: bitstring = checksignAtt(m,attpkU1) in
+    {26}if (Nt = challenge1) then
+    {27}new challenge2: nonce;
+    {28}let mess: bitstring = challenge2 in
+    {29}out(c, senc((mess,a_2),k_3));
+    {30}in(c, s2: bitstring);
+    {31}let m1: bitstring = sdec(s2,k_3) in
+    {32}let m2: bitstring = checksign(m1,pkY1) in
+    {33}let m3: bitstring = getmess(s2) in
+    {34}if (m3 = getmess(s2)) then
+    {35}event validChallengeResponse(m3,s2)
+)
+
+--  Process 1 (that is, process 0, with let moved downwards):
+{1}new k_1: key;
+{2}new attskU_1: AttestationPrivatekey;
+(
+    {4}!
+    {8}in(c, s: bitstring);
+    {5}let k_2: key = k_1 in
+    {9}let (challengeU: nonce,a_1: RP_id) = sdec(s,k_2) in
+    {10}new skU: skey;
+    {11}let pkU: pkey = spk(skU) in
+    {7}let attestation_cert_1: bitstring = attestation_cert in
+    {6}let attskU_2: AttestationPrivatekey = attskU_1 in
+    {3}let attpkU_1: AttestationPublicKey = spkAtt(attskU_1) in
+    {12}out(c, senc((attestation_cert_1,signAtt((pkU,attpkU_1,challengeU),attskU_2)),k_2));
+    {13}in(c, s1: bitstring);
+    {14}let mess1: bitstring = sdec(s1,k_2) in
+    {15}event sentChallengeResponse(mess1,sign(senc(mess1,k_2),skU));
+    {16}out(c, sign(senc(mess1,k_2),skU))
+) | (
+    {17}!
+    {20}new challenge1: nonce;
+    {19}let a_2: RP_id = a in
+    {18}let k_3: key = k_1 in
+    {21}out(c, senc((challenge1,a_2),k_3));
+    {22}in(c, s_1: bitstring);
+    {23}let m: bitstring = sdec(s_1,k_3) in
+    {24}let (cert: bitstring,pkY1: pkey,attpkU1: AttestationPublicKey,credUser: bitstring,Nt: nonce) = getmessAtt(m) in
+    {25}let ver: bitstring = checksignAtt(m,attpkU1) in
+    {26}if (Nt = challenge1) then
+    {27}new challenge2: nonce;
+    {28}let mess: bitstring = challenge2 in
+    {29}out(c, senc((mess,a_2),k_3));
+    {30}in(c, s2: bitstring);
+    {31}let m1: bitstring = sdec(s2,k_3) in
+    {32}let m2: bitstring = checksign(m1,pkY1) in
+    {33}let m3: bitstring = getmess(s2) in
+    {34}if (m3 = getmess(s2)) then
+    {35}event validChallengeResponse(m3,s2)
+)
+
+-- Query event(validChallengeResponse(N,s_2)) ==> event(sentChallengeResponse(N,s_2)) in process 1.
+Translating the process into Horn clauses...
+nounif attacker(senc((challengeU_1,a_3),k_1[]))/-5000
+Completing...
+Starting query event(validChallengeResponse(N,s_2)) ==> event(sentChallengeResponse(N,s_2))
+RESULT event(validChallengeResponse(N,s_2)) ==> event(sentChallengeResponse(N,s_2)) is true.
+-- Query not attacker(attskU[]) in process 1.
+Translating the process into Horn clauses...
+nounif attacker(senc((challengeU_1,a_3),k_1[]))/-5000
+Completing...
+Starting query not attacker(attskU[])
+RESULT not attacker(attskU[]) is true.
+-- Query not attacker(attpkU[]) in process 1.
+Translating the process into Horn clauses...
+nounif attacker(senc((challengeU_1,a_3),k_1[]))/-5000
+Completing...
+Starting query not attacker(attpkU[])
+RESULT not attacker(attpkU[]) is true.
+-- Query not attacker(k[]) in process 1.
+Translating the process into Horn clauses...
+nounif attacker(senc((challengeU_1,a_3),k_1[]))/-5000
+Completing...
+Starting query not attacker(k[])
+RESULT not attacker(k[]) is true.
+
+--------------------------------------------------------------
+Verification summary:
+
+Query event(validChallengeResponse(N,s_2)) ==> event(sentChallengeResponse(N,s_2)) is true.
+
+Query not attacker(attskU[]) is true.
+
+Query not attacker(attpkU[]) is true.
+
+Query not attacker(k[]) is true.
+
+--------------------------------------------------------------
+
