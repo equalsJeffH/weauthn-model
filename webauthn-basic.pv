@@ -4,8 +4,16 @@
    Slides: https://cps-vo.org/node/48511
    github: https://github.com/hhalpin/weauthn-model
 *)
-(* Updated by Jeff Hodges with corrections and comments, May 2021 *)
-(* http://kingsmountain.com/people/jeff.hodges/                   *)
+
+(**** webauthn-basic.pv ****
+
+See the paper section 5.2 for a detailed description of this model.
+
+In summary: This models first registration of a WebAuthn user credential with a server (aka Relying Party) and then subsequent authentication using that registered credential.  The model seeks to prove various properties of the protocol.
+
+Updated by Jeff Hodges with corrections and comments, May 2021
+http://kingsmountain.com/people/jeff.hodges/
+****)
 
 
 free c:channel.  (* TLS channel *)
