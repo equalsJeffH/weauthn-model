@@ -1,95 +1,121 @@
-free c:channel.
+(* ProVerif Web Authentication Formal Model
+   originally by Iness Ben Guirat and Harry Halpin
+   Paper: https://dl.acm.org/doi/10.1145/3190619.3190640
+   github: https://github.com/hhalpin/weauthn-model [sic]
+*)
+
+(**** unlinkability.pv ****
+
+This model simply proves that if the same authenticator is used to authenticate with a given server in the context of different accounts, the server can correlate the authenticator use across those accounts because the attestation public key is the same. See
+
+To counter this, it is advised by the FIDO Alliance (fidoalliance.org) that authenticators use the same attestation key pair for large batches (100K) of authenticators.
+
+This version editorially cleaned up, as well as technically: removed unused types, variables, etc.
+****)
 
 type AttestationPublicKey.
 type AttestationPrivatekey.
 type nonce.
 type pkey.
 type skey.
-type host.
 type key.
 type RP_id.
 
+(* TLS channel *)
 
-(*For Digital Signatures *)
+free c: channel. (* TLS channel *)
 
-fun spk(skey):pkey.
-fun sign(bitstring, skey):bitstring.
+const k: key. (* TLS record layer symmetric encryption key.
+                 This model assumes an error-free TLS connection establishment
+                 resulting in this key |k| as the encryption key. *)
+
+
+(* For Digital Signatures *)
+
+fun spk(skey): pkey.
+fun sign(bitstring, skey): bitstring.
 reduc forall x:bitstring, y:skey; getmess(sign(x, y)) = x.
 reduc forall x:bitstring, y:skey; checksign(sign(x, y), spk(y)) = x.
 
-(*For nonces*)
+(* For nonces *)
 
 fun nonce_to_bitstring ( nonce ) : bitstring [ data , typeConverter ] .
 table nonceTable(nonce) .
 
-(*For Digital signature over Attestation Credentials*)
+(* For Digital signature over Attestation Credentials *)
 
 fun spkAtt(AttestationPrivatekey):AttestationPublicKey.
 fun signAtt(bitstring, AttestationPrivatekey):bitstring.
 reduc forall x:bitstring, y:AttestationPrivatekey; getmessAtt(signAtt(x, y)) = x.
 reduc forall x:bitstring, y:AttestationPrivatekey; checksignAtt(signAtt(x, y), spkAtt(y)) = x.
 
-(*Symetric encryption*)
+(* Symetric encryption *)
 
 fun senc(bitstring, key): bitstring.
 reduc forall x: bitstring, k: key; sdec(senc(x,k),k) = x.
 
 
-(*User's ID  and Server's ID*)
-const cert:bitstring [private].
-const a:RP_id [private].
-const credentialID2:bitstring [private].
+(* Server's ID *)
+const a: RP_id [private]. (* server's identity *)
 
-(*Table*)
+(* Table *)
 table tableAtt(AttestationPublicKey).
 
-(*Events and Queries*)
+(* Events and Queries *)
 
 event reachSameKey(AttestationPublicKey).
 
-
 query N1:AttestationPublicKey; event(reachSameKey(N1)).
 
-free attskU: AttestationPrivatekey[private].
+free attskU: AttestationPrivatekey [private].
 query attacker(attskU).
-free attpkU: AttestationPublicKey[private].
+
+free attpkU: AttestationPublicKey [private].
 query attacker(attpkU).
 
-const k:key.
-let processUser ( k: key,cert:bitstring, attskA: AttestationPrivatekey, attpkA:AttestationPublicKey) =
+
+let processUser (k: key, attskA: AttestationPrivatekey, attpkA: AttestationPublicKey) =
+
     (*Registration*)
-    in(c,s:bitstring);
-    let(challengeU:nonce, aU:RP_id)= sdec(s,k) in
-    new skU:skey;
+
+    in(c, s: bitstring); (* we expect server to send challenge & RP_id over encrypted TLS channel *)
+
+    let (challengeU: nonce, aU: RP_id) = sdec(s, k) in
+
+    new skU: skey;          (* user's authenticator mints new user credential key pair *)
     let pkU = spk(skU) in
 
-    out(c,senc(signAtt((pkU, attpkU, cert,challengeU), attskU),k))
-    .
+    out(c, senc(signAtt((pkU, attpkU, challengeU), attskU), k)). (* return signed registration response
+                                                                          containing attestation object, over
+                                                                          encrypted TLS channel. *)
 
 
-let processServer (k: key, a:RP_id) =    
-    
+let processServer (k: key, a:RP_id) =
+
     (*Registration*)
-    new challenge:nonce;
- 
-    new attpkU3: AttestationPublicKey;
-    let ver1=(challenge,a) in
-    out(c, senc((challenge,a),k));
 
-    in(c, s:bitstring);
-  
-    let m= sdec(s,k) in
-    let (pkY1: pkey, attpkU1:AttestationPublicKey, cert: bitstring, Nt:nonce) = getmessAtt(m) in
-    let ver = checksignAtt(m, attpkU1) in
+    new challenge: nonce;
 
-   get tableAtt(= attpkU1) in event reachSameKey(attpkU1)
-   else insert tableAtt(attpkU1).
+    out(c, senc((challenge, a), k)); (* Reg request: send challenge & RP_id over TLS *)
+
+    in(c, s:bitstring);              (* Registration response *)
+
+    let m = sdec(s, k) in
+    let (pkY1: pkey, attpkU1: AttestationPublicKey, Nt: nonce) = getmessAtt(m) in
+    let ver = checksignAtt(m, attpkU1) in  (* This verifies the attestation signature because `getmess()` does not. *)
+
+    get tableAtt(=attpkU1) in       (* Have we seen this registration before? *)
+        event reachSameKey(attpkU1) (* Yes, thus the user is re-identified,   *)
+                                    (* modulo the authenticator batch size    *)
+                                    (* having the same attestation key pair.  *)
+    else
+        insert tableAtt(attpkU1).   (* No, remember it.                       *)
 
 process
-  new attskU:AttestationPrivatekey;
-  let attpkU = spkAtt(attskU) in
-  (      
-    !processUser( k, cert, attskU,attpkU) | !processServer(k, a)
+  new attskU: AttestationPrivatekey;    (* The attestation key pair is a immutable property of     *)
+  let attpkU = spkAtt(attskU) in        (* the authenticator, so we mint it here at the beginning. *)
+  (
+    !processUser(k, attskU, attpkU) | !processServer(k, a)
   )
-   
-    
+
+(* END *)
