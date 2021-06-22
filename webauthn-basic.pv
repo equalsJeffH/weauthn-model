@@ -94,13 +94,14 @@ free k: key [private].  (* TLS symmetric encryption key *)
 (***** Symetric encryption *****)
 
 fun senc(bitstring, key): bitstring.
-reduc forall x: bitstring, k: key; sdec(senc(x,k),k) = x.
+reduc forall x: bitstring, encryptKey: key; sdec(senc(x,encryptKey),encryptKey) = x.
 
 
 (***** User's ID  and Server's ID *****)
 
-const cookie:bitstring [private].
-const attestation_cert:bitstring [private].
+(* const cookie:bitstring [private].         -- unused in the original model *)
+const attestation_cert:bitstring [private].  (* in the original model this component does not appear to add
+                                                any value to the analysis. *)
 const a: RP_id [private].
 
 
@@ -109,6 +110,8 @@ const a: RP_id [private].
 
 event sentChallengeResponse(bitstring, bitstring).
 event validChallengeResponse(bitstring, bitstring).
+
+(* we can only receive a valid response if the user sent a response message *)
 query N:bitstring, s:bitstring; event(validChallengeResponse(N, s)) ==> event(sentChallengeResponse(N, s)).
 
 (* query N:bitstring; event(reachAuthentication(N)).
@@ -123,19 +126,27 @@ query attacker(k).
 (***** Processes *****)
 
 let processUser ( k: key, attskU: AttestationPrivatekey, attpkU:AttestationPublicKey, attestation_cert:bitstring) =
+
     (* Registration *)
+
     in(c, s:bitstring);
-    let(challengeU:nonce, a:RP_id) = sdec(s,k) in
-    new skU:skey;
-    let pkU = spk(skU) in
-    out(c,
+    let (challengeU:nonce, a:RP_id) = sdec(s,k) in
+
+    new skU: skey;          (* mint new user credential "secret key user" |skU| *)
+    let pkU = spk(skU) in   (* and "public key user" |pkU|                      *)
+
+    out(c,                  (* return attestation response                      *)
         senc( ( attestation_cert, signAtt( (pkU, attpkU, challengeU), attskU ) ), k)
        );
 
 
     (* Authentication *)
+
     in(c, s1:bitstring);
-    let mess1 = sdec(s1, k) in
+    let mess1 = sdec(s1, k) in  (* receive server's challenge. However, this analysis is lacking because
+                                   it does not parse the server's message and then use the credential
+                                   private key corresponding to the public key registered with a particular
+                                   server. *)
 
     (* originally:
         event sentChallengeResponse( mess1, sign( senc(mess1,k), skU ) ); -- AFAICT, this and..
@@ -153,15 +164,18 @@ let processUser ( k: key, attskU: AttestationPrivatekey, attpkU:AttestationPubli
 let processServer (k: key, a:RP_id) =
 
     (* Registration *)
+
     new challenge1:nonce;
-    out(c, senc((challenge1,a),k));
-    in(c, s:bitstring);
+    out(c, senc((challenge1, a), k));   (* send registration request *)
+    in(c, s:bitstring);                 (* receive possible registration response *)
+
     let m = sdec(s,k) in
     let (cert:bitstring, pkY1: pkey, attpkU1:AttestationPublicKey, credUser: bitstring, Nt:nonce) = getmessAtt(m) in
-    let ver = checksignAtt(m, attpkU1) in
+                                            (* if the above succeeds, we received a registration response *)
+    let ver = checksignAtt(m, attpkU1) in   (* verify signature on attestation response *)
 
     if (Nt=challenge1) then (  (* if we got here, then the signature on the registration response msg verified,
-                                  and if the challenge returned is the one for this user, then we will proceed
+                                  and if the challenge returned matches the one we sent, then we will proceed
                                   to challenge the user to authenticate (not an actually typical server behavior,
                                   this just simplifies the model). *)
 
@@ -202,12 +216,13 @@ let processServer (k: key, a:RP_id) =
 
 
 process
-  new k:key;
-  new attskU:AttestationPrivatekey;
+  new tlsKey: key; (* assume TLS handshake is error-free and yields this symmetric channel-encryption key *)
+  new attSecretKey: AttestationPrivatekey; (* assume a particular authenticator with a particular attestation
+                                              private key *)
 
-  let attpkU = spkAtt(attskU) in
+  let attPublicKey = spkAtt(attSecretKey) in
   (
-    !processUser( k, attskU, attpkU, attestation_cert) | !processServer(k, a)
+    !processUser(tlsKey, attSecretKey, attPublicKey, attestation_cert) | !processServer(tlsKey, a)
   )
 
 
