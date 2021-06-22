@@ -34,7 +34,7 @@ type key.     (* symmetric key *)
 (***** For Digital Signatures *****)
 (*                                                            *)
 (*  This model of signatures assumes that the signature is    *)
-(*  always accompanied with the message x.                    *)
+(*  always _implicitly_ accompanied with the message x.       *)
 
 fun spk(skey):pkey.
 fun sign(bitstring, skey):bitstring.
@@ -61,7 +61,7 @@ table nonceTable(nonce) .
 (***** For Digital signature over Attestation Credentials *****)
 (*                                                            *)
 (*  This model of signatures assumes that the signature is    *)
-(*  always accompanied with the message x.                    *)
+(*  always _implicitly_ accompanied with the message x.       *)
 
 fun spkAtt(AttestationPrivatekey): AttestationPublicKey.
 fun signAtt(bitstring, AttestationPrivatekey): bitstring.
