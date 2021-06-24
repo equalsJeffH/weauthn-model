@@ -193,7 +193,7 @@ let processServer (k: key, a:RP_id) =
                                          (*           |                                                    *)
         let m3 = getmess(m1) in          (*     m3    |   mess1 (tho server sent `(mess,a)`) in out() above*)
 
-        if ( m3 = m2 ) then (            (* This check is necessary (?) in order to determine if the       *)
+        if ( m3 = m2 ) then (            (* This check is necessary (maybe?) in order to determine if the  *)
                                          (* signed msg is actually the expected one.                       *)
                                          (* Perhaps should use for the preceding "let" and this "if":      *)
                                          (*           let (Nbitstr:bitstring, a1:RP_id) = getmess(m1) in   *)
